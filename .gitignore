@@ -1,0 +1,9 @@
+# Secrets — never commit (the site needs none, but keep the guard)
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
