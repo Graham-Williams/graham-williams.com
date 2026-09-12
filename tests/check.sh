@@ -68,13 +68,13 @@ redir=$(curl -s -o /dev/null -w '%{redirect_url}' -H 'X-Forwarded-Proto: http' "
 
 # Cache-buster stamps must match the assets they point at (scripts/asset-version.sh refreshes them).
 css=$(shasum -a 256 static/style.css | cut -c1-8); ico=$(shasum -a 256 static/favicon.svg | cut -c1-8)
-for f in index.html 404.html; do
-  grep -q "/static/style.css?v=$css\"" "$f" && ok "css stamp current ($f)" || bad "css stamp stale ($f) — run scripts/asset-version.sh"
-  grep -q "/static/favicon.svg?v=$ico\"" "$f" && ok "favicon stamp current ($f)" || bad "favicon stamp stale ($f) — run scripts/asset-version.sh"
+HTML=$(curl -fsS "$BASE/"); NOTFOUND=$(curl -s "$BASE/does-not-exist")
+for page in index 404; do
+  body=$HTML; [ "$page" = 404 ] && body=$NOTFOUND
+  grep -q "/static/style.css?v=$css\"" <<<"$body" && ok "css stamp current ($page)" || bad "css stamp stale ($page) — run scripts/asset-version.sh"
+  grep -q "/static/favicon.svg?v=$ico\"" <<<"$body" && ok "favicon stamp current ($page)" || bad "favicon stamp stale ($page) — run scripts/asset-version.sh"
 done
 [ "$(status "$BASE/static/style.css?v=$css")" = 200 ] && ok "stamped css served" || bad "stamped css served"
-
-HTML=$(curl -fsS "$BASE/")
 ! grep -qiE '<script|<style| style=' <<<"$HTML" && ok "no inline script/style" || bad "no inline script/style"
 for host in km todoist-points taste-twin jjho dashboard; do
   grep -q "https://$host.graham-williams.com/" <<<"$HTML" && ok "links $host" || bad "links $host"
@@ -84,7 +84,6 @@ grep -q 'https://github.com/Graham-Williams/gremlins-minecraft-mods' <<<"$HTML" 
 # Every href on both pages must be site-relative or on the allowlist.
 hrefs() { grep -oiE 'href[[:space:]]*=[[:space:]]*("[^"]*"|'"'"'[^'"'"']*'"'"'|[^[:space:]>]+)' <<<"$1" \
           | sed -E 's/^[Hh][Rr][Ee][Ff][[:space:]]*=[[:space:]]*//; s/^"(.*)"$/\1/; s/^'"'"'(.*)'"'"'$/\1/'; }
-NOTFOUND=$(curl -s "$BASE/does-not-exist")
 for page in index 404; do
   body=$HTML; [ "$page" = 404 ] && body=$NOTFOUND
   stray=$(hrefs "$body" \
