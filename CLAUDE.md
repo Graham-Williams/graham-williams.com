@@ -36,7 +36,10 @@ third-party requests (typefaces are self-hosted under `static/fonts/`).
   opens weekly PRs for the base image's **patch** releases and for the pinned
   GitHub Action; bump both the tag and the digest together. Minor/major image
   bumps are ignored on purpose — nginx's odd minors (1.31) are mainline, and
-  moving to the next stable line (1.32) is a deliberate manual change.
+  moving to the next stable line (1.32) is a deliberate manual change — and
+  Dependabot will NOT prompt for it: when nginx retires 1.30 (historically
+  around April, when the next stable ships) this repo goes quiet, not loud, so
+  bump the tag + digest by hand then.
 - `docker-compose.yml` — joins the external `km-tracker_default` network so the
   existing Cloudflare tunnel can route to it by service name; read-only rootfs.
 - `tests/check.sh` — builds the image, runs it on a random local port with the
