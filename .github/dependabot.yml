@@ -4,6 +4,13 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # nginx ships two lines: even minors are stable (1.30.x), odd minors are
+      # mainline (1.31.x). We pin the stable line and take its patch releases
+      # (the security fixes) automatically; moving to the next stable line
+      # (1.32) is a deliberate manual bump.
+      - dependency-name: nginxinc/nginx-unprivileged
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
