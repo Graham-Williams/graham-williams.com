@@ -7,10 +7,11 @@ cd "$(dirname "$0")/.."
 
 IMG="homepage-test:$$"
 docker build -q -t "$IMG" . >/dev/null
+CID=""
+cleanup() { [ -n "$CID" ] && docker rm -f "$CID" >/dev/null 2>&1 || true; docker rmi -f "$IMG" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
 CID=$(docker run -d --rm --read-only --tmpfs /tmp:mode=1777,size=16m --cap-drop ALL \
         --security-opt no-new-privileges:true -p 127.0.0.1:0:8080 "$IMG")
-cleanup() { docker rm -f "$CID" >/dev/null 2>&1 || true; docker rmi -f "$IMG" >/dev/null 2>&1 || true; }
-trap cleanup EXIT
 
 PORT=$(docker port "$CID" 8080/tcp | head -1 | awk -F: '{print $NF}')
 BASE="http://127.0.0.1:$PORT"
@@ -31,7 +32,7 @@ curl -s "$BASE/does-not-exist" | grep -q "Nothing"   && ok "404 page renders"   
 [ "$(status "$BASE/robots.txt")" = 200 ]             && ok "robots.txt served"     || bad "robots.txt served"
 [ "$(status "$BASE/50x.html")" = 404 ]               && ok "stock 50x page gone"   || bad "stock 50x page gone"
 [ "$(status -H 'Host: evil.com' "$BASE/static")" = 301 ] && ok "directory redirect is 301" || bad "directory redirect is 301"
-dirloc=$(hdr -H 'Host: evil.com' "$BASE/static" | grep -i '^location:' | awk '{print $2}')
+dirloc=$(hdr -H 'Host: evil.com' "$BASE/static" | grep -i '^location:' | awk '{print $2}' || true)
 [ "$dirloc" = "/static/" ] && ok "directory redirect is relative" || bad "directory redirect is relative (got: $dirloc)"
 
 hdr "$BASE/static/fonts/outfit-700.woff2" | grep -qi '^content-type: font/woff2' && ok "woff2 mime type" || bad "woff2 mime type"
