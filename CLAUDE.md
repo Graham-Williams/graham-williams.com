@@ -83,8 +83,11 @@ are owned in the Cloudflare dashboard, not this repo: **Always Use HTTPS**
 (without it, plain `http://` reaches the origin — this repo bounces it itself
 via `X-Forwarded-Proto`, but the other apps on the domain don't) and **Web
 Analytics automatic injection**, which appends a `cloudflareinsights.com`
-beacon `<script>` to every HTML response; this page's CSP blocks it, so it only
-produces a console error. Do not loosen the CSP to admit it.
+beacon `<script>` to every HTML response; this page's CSP currently blocks it,
+so it only produces a console error. Graham wants the analytics, so the plan
+is to admit exactly that beacon — `script-src https://static.cloudflareinsights.com`
++ `connect-src https://cloudflareinsights.com`, nothing wider — tracked in
+issue #2. Always Use HTTPS was turned on 2026-09-12.
 
 ## Git workflow
 
