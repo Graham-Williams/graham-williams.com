@@ -30,7 +30,8 @@ hdr()    { curl -sI "$@" | tr -d '\r'; }
 curl -s "$BASE/does-not-exist" | grep -q "Nothing"   && ok "404 page renders"      || bad "404 page renders"
 [ "$(status "$BASE/robots.txt")" = 200 ]             && ok "robots.txt served"     || bad "robots.txt served"
 [ "$(status "$BASE/50x.html")" = 404 ]               && ok "stock 50x page gone"   || bad "stock 50x page gone"
-dirloc=$(hdr "$BASE/static" | grep -i '^location:' | awk '{print $2}')
+[ "$(status -H 'Host: evil.com' "$BASE/static")" = 301 ] && ok "directory redirect is 301" || bad "directory redirect is 301"
+dirloc=$(hdr -H 'Host: evil.com' "$BASE/static" | grep -i '^location:' | awk '{print $2}')
 [ "$dirloc" = "/static/" ] && ok "directory redirect is relative" || bad "directory redirect is relative (got: $dirloc)"
 
 hdr "$BASE/static/fonts/outfit-700.woff2" | grep -qi '^content-type: font/woff2' && ok "woff2 mime type" || bad "woff2 mime type"
@@ -47,7 +48,7 @@ check_headers() {  # $1 = label, rest = curl args
   grep -qi '^permissions-policy: camera=()'                         <<<"$h" && ok "permissions on $label"|| bad "permissions on $label"
   grep -qi '^strict-transport-security: max-age=31536000$'          <<<"$h" && ok "HSTS on $label"       || bad "HSTS on $label"
 }
-for path in / /healthz /static/style.css /static/fonts/outfit-700.woff2 /does-not-exist /static; do
+for path in / /healthz /static/style.css /static/fonts/outfit-700.woff2 /does-not-exist /static /.hidden; do
   check_headers "$path" "$BASE$path"
 done
 check_headers "www redirect" -H 'Host: www.graham-williams.com' "$BASE/"
@@ -65,13 +66,20 @@ for host in km todoist-points taste-twin jjho dashboard; do
 done
 grep -q 'https://github.com/Graham-Williams/gremlins-minecraft-mods' <<<"$HTML" && ok "links gremlins repo" || bad "links gremlins repo"
 
-# Every href on the page must be site-relative or on the allowlist.
-stray=$(grep -oE 'href="[^"]*"' <<<"$HTML" | sed -E 's/^href="(.*)"$/\1/' \
-  | grep -vE '^/[^/]' \
-  | grep -vE '^https://([a-z0-9-]+\.)?graham-williams\.com/' \
-  | grep -vE '^https://github\.com/Graham-Williams(/|$)' \
-  | grep -vE '^https://www\.linkedin\.com/in/graham-williams/?$' || true)
-[ -z "$stray" ] && ok "hrefs allowlisted" || bad "hrefs allowlisted: $stray"
+# Every href on both pages must be site-relative or on the allowlist.
+hrefs() { grep -oiE 'href[[:space:]]*=[[:space:]]*("[^"]*"|'"'"'[^'"'"']*'"'"'|[^[:space:]>]+)' <<<"$1" \
+          | sed -E 's/^[Hh][Rr][Ee][Ff][[:space:]]*=[[:space:]]*//; s/^"(.*)"$/\1/; s/^'"'"'(.*)'"'"'$/\1/'; }
+NOTFOUND=$(curl -s "$BASE/does-not-exist")
+for page in index 404; do
+  body=$HTML; [ "$page" = 404 ] && body=$NOTFOUND
+  stray=$(hrefs "$body" \
+    | grep -vE '^/([^/\\]|$)' \
+    | grep -vE '^https://([a-z0-9-]+\.)?graham-williams\.com/' \
+    | grep -vE '^https://github\.com/Graham-Williams(/|$)' \
+    | grep -vE '^https://www\.linkedin\.com/in/graham-williams/?$' || true)
+  [ -z "$stray" ] && ok "hrefs allowlisted ($page)" || bad "hrefs allowlisted ($page): $stray"
+  [ "$(hrefs "$body" | wc -l)" -ge 3 ] && ok "hrefs extracted ($page)" || bad "hrefs extracted ($page): none found"
+done
 ! grep -qiE '<meta[^>]+http-equiv' <<<"$HTML" && ok "no meta refresh" || bad "no meta refresh"
 ! grep -qE 'url\(["'"'"']?https?:' static/style.css && ok "no remote assets in CSS" || bad "no remote assets in CSS"
 

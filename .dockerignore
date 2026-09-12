@@ -1,6 +1,11 @@
-.git
-.github
-tests
-**/*.md
-.env*
-**/.DS_Store
+# Allowlist: nothing reaches the image unless named here.
+*
+!index.html
+!404.html
+!robots.txt
+!nginx.conf
+!snippets/security-headers.conf
+!static/style.css
+!static/favicon.svg
+!static/fonts/*.woff2
+!static/fonts/OFL.txt
