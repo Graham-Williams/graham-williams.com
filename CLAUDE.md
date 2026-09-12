@@ -33,8 +33,10 @@ third-party requests (typefaces are self-hosted under `static/fonts/`).
   `preload`.
 - `Dockerfile` — `nginxinc/nginx-unprivileged`, pinned by tag **and digest**,
   running as a non-root user on 8080. Dependabot (`.github/dependabot.yml`)
-  opens weekly PRs for the base image and the pinned GitHub Action; bump both
-  the tag and the digest together.
+  opens weekly PRs for the base image's **patch** releases and for the pinned
+  GitHub Action; bump both the tag and the digest together. Minor/major image
+  bumps are ignored on purpose — nginx's odd minors (1.31) are mainline, and
+  moving to the next stable line (1.32) is a deliberate manual change.
 - `docker-compose.yml` — joins the external `km-tracker_default` network so the
   existing Cloudflare tunnel can route to it by service name; read-only rootfs.
 - `tests/check.sh` — builds the image, runs it on a random local port with the
