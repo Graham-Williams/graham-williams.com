@@ -1,0 +1,28 @@
+# graham-williams.com, self-hosted behind the existing Cloudflare tunnel.
+#
+# - Joins the external `km-tracker_default` network so the tunnel can route
+#   graham-williams.com (and www) -> http://homepage:8080 by service name.
+# - NO host port mapping: reachable only over that network.
+# - Static files only: no secrets, no environment, no volumes. The rootfs is
+#   read-only; nginx's pid and temp files live on a small tmpfs at /tmp.
+name: homepage
+
+services:
+  homepage:
+    build: .
+    image: homepage:local
+    container_name: homepage
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - km-tracker_default
+
+networks:
+  km-tracker_default:
+    external: true

@@ -1,0 +1,12 @@
+The typefaces in this directory are self-hosted subsets served under the
+SIL Open Font License 1.1 (https://openfontlicense.org/):
+
+- Bricolage Grotesque — Copyright 2022 The Bricolage Grotesque Project Authors
+  (https://github.com/ateliertriay/bricolage)
+- Outfit — Copyright 2021 The Outfit Project Authors
+  (https://github.com/Outfitio/Outfit-Fonts)
+- IBM Plex Sans — Copyright 2017 IBM Corp.
+  (https://github.com/IBM/plex)
+
+Each font is licensed under the SIL Open Font License, Version 1.1. The
+license text is available with each project above and at the URL above.
