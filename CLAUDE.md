@@ -14,7 +14,11 @@ third-party requests (typefaces are self-hosted under `static/fonts/`).
 - `index.html` — the page. Content lives here; keep copy short.
 - `static/style.css` — all styling. The page ships with a strict
   Content-Security-Policy (`style-src 'self'`), so **no inline styles or
-  scripts** — keep everything in this file.
+  scripts** — keep everything in this file. **After editing it (or the
+  favicon), run `scripts/asset-version.sh`** — it re-stamps the `?v=<hash>`
+  on the `<link>`s in `index.html`/`404.html`; the tests fail if the stamp is
+  stale. The stamp exists because Cloudflare's edge floors short browser-cache
+  TTLs at 4 h, so only a changed URL makes a CSS edit visible immediately.
 - `static/fonts/` — self-hosted woff2 Latin subsets (SIL OFL; `OFL.txt` there
   carries each project's notice plus the full license text). IBM Plex Sans is
   one variable file covering weights 400–500.
@@ -23,6 +27,7 @@ third-party requests (typefaces are self-hosted under `static/fonts/`).
 - `robots.txt` — allow-all; the homepage is meant to be indexable.
 - `nginx.conf` + `snippets/security-headers.conf` — the full nginx config
   (security headers, cache policy, `/healthz`, `www` → apex redirect,
+  plain-http → https redirect keyed on the tunnel's `X-Forwarded-Proto`,
   dotfiles 404, relative directory redirects). HSTS is set for this host only —
   deliberately no `includeSubDomains` (each app owns its own policy) and never
   `preload`.
@@ -70,6 +75,16 @@ them.
 Outbound links are allowlisted in `tests/check.sh` (`*.graham-williams.com`,
 `github.com/Graham-Williams/*`, `linkedin.com/in/graham-williams`). Adding a
 link to any other host must be a deliberate change to that list.
+
+## Cloudflare zone settings that affect this page
+
+Two zone-wide toggles were found off during the first QA pass (2026-09-12) and
+are owned in the Cloudflare dashboard, not this repo: **Always Use HTTPS**
+(without it, plain `http://` reaches the origin — this repo bounces it itself
+via `X-Forwarded-Proto`, but the other apps on the domain don't) and **Web
+Analytics automatic injection**, which appends a `cloudflareinsights.com`
+beacon `<script>` to every HTML response; this page's CSP blocks it, so it only
+produces a console error. Do not loosen the CSP to admit it.
 
 ## Git workflow
 

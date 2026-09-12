@@ -60,6 +60,20 @@ check_headers "www redirect" -H 'Host: www.graham-williams.com' "$BASE/"
 redir=$(curl -s -o /dev/null -w '%{redirect_url}' -H 'Host: www.graham-williams.com' "$BASE/x?y=1")
 [ "$redir" = "https://graham-williams.com/x?y=1" ] && ok "www redirects to apex" || bad "www redirects to apex (got: $redir)"
 
+# Plain-http visitors (X-Forwarded-Proto from the tunnel) bounce to https; https ones are served.
+[ "$(status -H 'X-Forwarded-Proto: http' "$BASE/x?y=1")" = 301 ] && ok "http visitor is 301" || bad "http visitor is 301"
+redir=$(curl -s -o /dev/null -w '%{redirect_url}' -H 'X-Forwarded-Proto: http' "$BASE/x?y=1")
+[ "$redir" = "https://graham-williams.com/x?y=1" ] && ok "http visitor sent to https" || bad "http visitor sent to https (got: $redir)"
+[ "$(status -H 'X-Forwarded-Proto: https' "$BASE/")" = 200 ] && ok "https visitor served" || bad "https visitor served"
+
+# Cache-buster stamps must match the assets they point at (scripts/asset-version.sh refreshes them).
+css=$(shasum -a 256 static/style.css | cut -c1-8); ico=$(shasum -a 256 static/favicon.svg | cut -c1-8)
+for f in index.html 404.html; do
+  grep -q "/static/style.css?v=$css\"" "$f" && ok "css stamp current ($f)" || bad "css stamp stale ($f) — run scripts/asset-version.sh"
+  grep -q "/static/favicon.svg?v=$ico\"" "$f" && ok "favicon stamp current ($f)" || bad "favicon stamp stale ($f) — run scripts/asset-version.sh"
+done
+[ "$(status "$BASE/static/style.css?v=$css")" = 200 ] && ok "stamped css served" || bad "stamped css served"
+
 HTML=$(curl -fsS "$BASE/")
 ! grep -qiE '<script|<style| style=' <<<"$HTML" && ok "no inline script/style" || bad "no inline script/style"
 for host in km todoist-points taste-twin jjho dashboard; do

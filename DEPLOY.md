@@ -33,7 +33,11 @@ touched. Verify:
 
 ```bash
 docker exec homepage wget -qO- http://127.0.0.1:8080/healthz
-curl -s -o /dev/null -w '%{http_code}\n' https://graham-williams.com/
+curl -s -o /dev/null -w '%{http_code}\n' https://graham-williams.com/            # 200
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' http://graham-williams.com/  # 301 https://…
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://www.graham-williams.com/  # 301 apex
+# Edge-only check: Cloudflare's analytics beacon must not be injected (expect 0)
+curl -s -A 'Mozilla/5.0 Chrome/128' -H 'Accept: text/html' https://graham-williams.com/ | grep -c cloudflareinsights
 ```
 
 ## Previewing a branch
