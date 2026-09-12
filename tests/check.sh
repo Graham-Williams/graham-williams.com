@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 
 IMG="homepage-test:$$"
 docker build -q -t "$IMG" . >/dev/null
-CID=$(docker run -d --rm --read-only --tmpfs /tmp --cap-drop ALL \
+CID=$(docker run -d --rm --read-only --tmpfs /tmp:mode=1777,size=16m --cap-drop ALL \
         --security-opt no-new-privileges:true -p 127.0.0.1:0:8080 "$IMG")
 cleanup() { docker rm -f "$CID" >/dev/null 2>&1 || true; docker rmi -f "$IMG" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
@@ -28,19 +28,33 @@ hdr()    { curl -sI "$@" | tr -d '\r'; }
 [ "$(status "$BASE/static/favicon.svg")" = 200 ]     && ok "favicon served"        || bad "favicon served"
 [ "$(status "$BASE/does-not-exist")" = 404 ]         && ok "unknown path is 404"   || bad "unknown path is 404"
 curl -s "$BASE/does-not-exist" | grep -q "Nothing"   && ok "404 page renders"      || bad "404 page renders"
+[ "$(status "$BASE/robots.txt")" = 200 ]             && ok "robots.txt served"     || bad "robots.txt served"
+[ "$(status "$BASE/50x.html")" = 404 ]               && ok "stock 50x page gone"   || bad "stock 50x page gone"
+dirloc=$(hdr "$BASE/static" | grep -i '^location:' | awk '{print $2}')
+[ "$dirloc" = "/static/" ] && ok "directory redirect is relative" || bad "directory redirect is relative (got: $dirloc)"
 
 hdr "$BASE/static/fonts/outfit-700.woff2" | grep -qi '^content-type: font/woff2' && ok "woff2 mime type" || bad "woff2 mime type"
 hdr "$BASE/static/fonts/outfit-700.woff2" | grep -qi 'immutable'                && ok "fonts cached immutable" || bad "fonts cached immutable"
 hdr "$BASE/" | grep -qi '^cache-control: no-cache'                              && ok "html no-cache"         || bad "html no-cache"
 
-for path in / /static/style.css /static/fonts/outfit-700.woff2 /does-not-exist; do
-  h=$(hdr "$BASE$path")
-  grep -qi "^content-security-policy: default-src 'none'" <<<"$h" && ok "CSP on $path"     || bad "CSP on $path"
-  grep -qi '^x-content-type-options: nosniff'              <<<"$h" && ok "nosniff on $path" || bad "nosniff on $path"
-  grep -qi '^x-frame-options: DENY'                        <<<"$h" && ok "XFO on $path"     || bad "XFO on $path"
+check_headers() {  # $1 = label, rest = curl args
+  local label=$1; shift
+  local h; h=$(hdr "$@")
+  grep -qi "^content-security-policy: default-src 'none'"          <<<"$h" && ok "CSP on $label"        || bad "CSP on $label"
+  grep -qi '^x-content-type-options: nosniff'                       <<<"$h" && ok "nosniff on $label"    || bad "nosniff on $label"
+  grep -qi '^x-frame-options: DENY'                                 <<<"$h" && ok "XFO on $label"        || bad "XFO on $label"
+  grep -qi '^referrer-policy: strict-origin-when-cross-origin'      <<<"$h" && ok "referrer on $label"   || bad "referrer on $label"
+  grep -qi '^permissions-policy: camera=()'                         <<<"$h" && ok "permissions on $label"|| bad "permissions on $label"
+  grep -qi '^strict-transport-security: max-age=31536000$'          <<<"$h" && ok "HSTS on $label"       || bad "HSTS on $label"
+}
+for path in / /healthz /static/style.css /static/fonts/outfit-700.woff2 /does-not-exist /static; do
+  check_headers "$path" "$BASE$path"
 done
+check_headers "www redirect" -H 'Host: www.graham-williams.com' "$BASE/"
 ! hdr "$BASE/" | grep -qiE '^server: nginx/'  && ok "server version hidden" || bad "server version hidden"
+[ "$(status "$BASE/.hidden")" = 404 ] && ok "dotfiles are 404" || bad "dotfiles are 404"
 
+[ "$(status -H 'Host: www.graham-williams.com' "$BASE/x?y=1")" = 301 ] && ok "www redirect is 301" || bad "www redirect is 301"
 redir=$(curl -s -o /dev/null -w '%{redirect_url}' -H 'Host: www.graham-williams.com' "$BASE/x?y=1")
 [ "$redir" = "https://graham-williams.com/x?y=1" ] && ok "www redirects to apex" || bad "www redirects to apex (got: $redir)"
 
@@ -51,12 +65,14 @@ for host in km todoist-points taste-twin jjho dashboard; do
 done
 grep -q 'https://github.com/Graham-Williams/gremlins-minecraft-mods' <<<"$HTML" && ok "links gremlins repo" || bad "links gremlins repo"
 
-# Every absolute URL on the page must be on the allowlist.
-stray=$(grep -oE 'https?://[^"'"'"' <>]+' <<<"$HTML" \
+# Every href on the page must be site-relative or on the allowlist.
+stray=$(grep -oE 'href="[^"]*"' <<<"$HTML" | sed -E 's/^href="(.*)"$/\1/' \
+  | grep -vE '^/[^/]' \
   | grep -vE '^https://([a-z0-9-]+\.)?graham-williams\.com/' \
   | grep -vE '^https://github\.com/Graham-Williams(/|$)' \
   | grep -vE '^https://www\.linkedin\.com/in/graham-williams/?$' || true)
-[ -z "$stray" ] && ok "outbound links allowlisted" || bad "outbound links allowlisted: $stray"
+[ -z "$stray" ] && ok "hrefs allowlisted" || bad "hrefs allowlisted: $stray"
+! grep -qiE '<meta[^>]+http-equiv' <<<"$HTML" && ok "no meta refresh" || bad "no meta refresh"
 ! grep -qE 'url\(["'"'"']?https?:' static/style.css && ok "no remote assets in CSS" || bad "no remote assets in CSS"
 
 exit $fail

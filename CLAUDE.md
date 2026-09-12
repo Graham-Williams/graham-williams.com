@@ -15,17 +15,27 @@ third-party requests (typefaces are self-hosted under `static/fonts/`).
 - `static/style.css` — all styling. The page ships with a strict
   Content-Security-Policy (`style-src 'self'`), so **no inline styles or
   scripts** — keep everything in this file.
-- `static/fonts/` — self-hosted woff2 subsets (SIL OFL; see `OFL.txt` there).
+- `static/fonts/` — self-hosted woff2 Latin subsets (SIL OFL; `OFL.txt` there
+  carries each project's notice plus the full license text). IBM Plex Sans is
+  one variable file covering weights 400–500.
 - `static/favicon.svg`
 - `404.html`
-- `nginx.conf` — the full nginx config (security headers, cache policy,
-  `/healthz`, `www` → apex redirect).
-- `Dockerfile` — `nginxinc/nginx-unprivileged` (runs as a non-root user on 8080).
+- `robots.txt` — allow-all; the homepage is meant to be indexable.
+- `nginx.conf` + `snippets/security-headers.conf` — the full nginx config
+  (security headers, cache policy, `/healthz`, `www` → apex redirect,
+  dotfiles 404, relative directory redirects). HSTS is set for this host only —
+  deliberately no `includeSubDomains` (each app owns its own policy) and never
+  `preload`.
+- `Dockerfile` — `nginxinc/nginx-unprivileged`, pinned by tag **and digest**,
+  running as a non-root user on 8080. Dependabot (`.github/dependabot.yml`)
+  opens weekly PRs for the base image and the pinned GitHub Action; bump both
+  the tag and the digest together.
 - `docker-compose.yml` — joins the external `km-tracker_default` network so the
   existing Cloudflare tunnel can route to it by service name; read-only rootfs.
-- `tests/check.sh` — builds the image, runs it on a random local port, and
-  asserts the page, `/healthz`, security headers, and the outbound-link
-  allowlist. CI runs the same script.
+- `tests/check.sh` — builds the image, runs it on a random local port with the
+  production hardening flags, and asserts the page, `/healthz`, all six security
+  headers on every response path (including the www redirect), cache policy,
+  and the href allowlist. CI runs the same script.
 
 ## Run locally
 

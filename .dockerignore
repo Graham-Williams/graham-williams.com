@@ -1,6 +1,6 @@
 .git
 .github
 tests
-*.md
+**/*.md
 .env*
-.DS_Store
+**/.DS_Store
