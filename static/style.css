@@ -1,0 +1,130 @@
+/* graham-williams.com — the whole stylesheet. No inline styles anywhere:
+   the page ships with style-src 'self'. */
+
+@font-face { font-family: "Bricolage Grotesque"; font-style: normal; font-weight: 600 800; font-display: swap; src: url("fonts/bricolage-grotesque-600-800.woff2") format("woff2"); }
+@font-face { font-family: "Outfit"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/outfit-700.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400 500; font-display: swap; src: url("fonts/ibm-plex-sans-400-500.woff2") format("woff2"); }
+
+:root {
+  --bg: #0E1118;
+  --fg: #EAEDF5;
+  --dim: #8F97AA;
+  --tile: #151924;
+  --edge: #242B3B;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --title: "Outfit", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); color-scheme: dark; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.masthead, main, footer { width: min(1040px, 100% - 48px); margin-inline: auto; }
+
+/* masthead */
+.masthead { padding-top: clamp(48px, 8vw, 88px); }
+h1 {
+  margin: 0 0 16px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(48px, 8vw, 92px);
+  line-height: .95;
+  letter-spacing: -.03em;
+  font-variation-settings: "opsz" 96;
+  text-wrap: balance;
+}
+.bio { margin: 0; max-width: 54ch; font-size: 18px; color: var(--dim); }
+.bio em { font-style: normal; color: var(--fg); }
+.bio .inline { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+
+/* sections */
+main { display: flex; flex-direction: column; gap: 40px; padding-block: 44px 16px; }
+.eyebrow {
+  margin: 0 0 12px;
+  font: 500 12px/1 var(--body);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* tiles */
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+.tile {
+  --c: #AEB8C8;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  grid-column: span 4;
+  min-height: 184px;
+  padding: 24px;
+  border-radius: 18px;
+  background: var(--tile);
+  border: 1px solid var(--edge);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(380px 170px at 10% 0%, color-mix(in srgb, var(--c) 26%, transparent), transparent 70%);
+}
+.tile:hover, .tile:focus-visible { border-color: color-mix(in srgb, var(--c) 60%, transparent); }
+.tile:focus-visible { outline: 2px solid var(--c); outline-offset: 3px; }
+
+.km { --c: #FF7A5C; grid-column: span 7; }
+.tp { --c: #F2B84B; grid-column: span 5; }
+.tt { --c: #4FD18B; }
+.jj { --c: #6FA3FF; }
+.db { --c: #B58CFF; }
+
+.mark {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: var(--c);
+  color: var(--bg);
+  font: 700 15px/1 var(--title);
+}
+.name { margin-top: auto; font: 700 23px/1.15 var(--title); letter-spacing: -.01em; }
+.desc { font-size: 15px; color: var(--dim); max-width: 44ch; }
+.url { font-size: 12.5px; letter-spacing: .02em; color: var(--c); }
+
+/* the code row: same tile, laid out horizontally */
+.row { flex-direction: row; align-items: center; min-height: 0; padding: 18px 24px; gap: 18px; }
+.row .body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.row .name { margin-top: 0; font-size: 19px; }
+.row .url { margin-left: auto; white-space: nowrap; }
+
+/* footer */
+footer { margin-top: auto; padding: 36px 0 40px; display: flex; gap: 22px; font-size: 13px; color: var(--dim); }
+footer a { color: inherit; text-decoration: none; }
+footer a:hover, footer a:focus-visible { color: var(--fg); }
+
+@media (max-width: 900px) {
+  .tt, .jj { grid-column: span 6; }
+  .db { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .tile, .km, .tp { grid-column: 1 / -1; min-height: 0; }
+  .row { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .row .url { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile { transition: none; }
+}
