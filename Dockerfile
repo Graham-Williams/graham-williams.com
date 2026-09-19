@@ -1,7 +1,7 @@
 # graham-williams.com — static page on nginx, running as a non-root user.
 # Pinned to an exact stable release by tag AND digest; bump both deliberately
 # (Dependabot opens the PR).
-FROM nginxinc/nginx-unprivileged:1.30.4-alpine@sha256:442753882674b49ae2c1de83ed67896131c0777f56df5005e356e62bc3f7e7ce
+FROM nginxinc/nginx-unprivileged:1.30.5-alpine@sha256:daa17b944bac2b578e962da4c61ad72a59233b3c63abea17113acaf4e6b9aea4
 
 USER root
 # Drop the stock site and its error page; we ship a complete nginx.conf.
