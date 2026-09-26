@@ -4,7 +4,27 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Deliberately ungrouped: there is one base image, and its digest refreshes
+    # are the security rebuilds - they should arrive as their own obvious PR
+    # rather than folded into a batch.
     ignore:
+      # ---- Scheduled updates are minor + patch only ------------------------
+      # An auto-PR should be something that can be read and merged in a minute.
+      # A major bump is a migration, not a chore, so majors are taken
+      # deliberately and never on a weekly timer.
+      #
+      # This costs nothing in security, which is the load-bearing detail here.
+      # From GitHub's docs: "There is no interaction between the settings
+      # specified in the dependabot.yml file and Dependabot security alerts."
+      # `ignore` suppresses only *scheduled version updates*. Dependabot
+      # *security* updates bypass this file entirely, so when the only fix for
+      # an advisory is a major bump, that PR still arrives - on its own and
+      # unbatched, which is exactly how a security fix should show up.
+      # Dependabot alerts + security updates are enabled on this repo, and that
+      # is what makes the above true. Do not delete this rule to "unblock" a
+      # security fix: it has never blocked one.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
       # nginx ships two lines: even minors are stable (1.30.x), odd minors are
       # mainline (1.31.x). We pin the stable line and take its patch releases
       # (the security fixes) automatically; moving to the next stable line
@@ -15,3 +35,16 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # All the workflow actions in one PR rather than one each. The actions here
+      # are SHA-pinned with a `# vX.Y.Z` comment, so Dependabot can see movement
+      # inside the current major and this group gets a real minor/patch stream.
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Same floor as docker above: majors are deliberate, and security updates
+      # bypass this file.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
