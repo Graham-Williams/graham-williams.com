@@ -76,7 +76,7 @@ for page in index 404; do
 done
 [ "$(status "$BASE/static/style.css?v=$css")" = 200 ] && ok "stamped css served" || bad "stamped css served"
 ! grep -qiE '<script|<style| style=' <<<"$HTML" && ok "no inline script/style" || bad "no inline script/style"
-for host in km todoist-points taste-twin jjho dashboard; do
+for host in km todoist-points taste-twin jjho hub; do
   grep -q "https://$host.graham-williams.com/" <<<"$HTML" && ok "links $host" || bad "links $host"
 done
 grep -q 'https://github.com/Graham-Williams/gremlins-minecraft-mods' <<<"$HTML" && ok "links gremlins repo" || bad "links gremlins repo"
